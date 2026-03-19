@@ -1,0 +1,30 @@
+# Virtual enviroment
+.venv/
+venv/
+env/
+
+# Mac
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+logs/
+*.log
+
+# Temporal files
+*.tmp
+
+# IDEs
+.vscode/
+
+# Others
+*.tmp
+*.swp
