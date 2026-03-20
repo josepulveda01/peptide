@@ -3,16 +3,11 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from src.generator.generator import(
-    random_peptide_generator,
-    affinity,
-    solubility,
-    evaluate_peptide,
-    evaluate_sequences
-)
+from src.generator.generator import random_peptide_generator, evaluate_sequences
 from src.encoding.encoding import encode, encode_batch
 from src.models.random_forest import RandomForestWithUncertainty
 from src.selection_strategy.ucb import UCBStrategy
+from src.storage.persistence import save_experiment
 
 # evaluate_peptide() as lab_lecture()
 
@@ -39,6 +34,8 @@ def run_simulation(
     sequences, aff, sol = generate_initial_data(init_size)
     history_best_aff = []
     history_mean_sol = []
+    
+    rounds_data = [] # datos para guardado por ronda
     
     for r in range(n_rounds):
         print(f"Ronda {r}")
@@ -70,7 +67,16 @@ def run_simulation(
         
         print(f"Mejor afinidad hasta ahora: {best_aff:.3f}, Solubilidad media: {mean_sol:.3f}")
         
-    return sequences, aff, sol, history_best_aff, history_mean_sol
+        # Guardar datos por ronda
+        rounds_data.append({
+            "sequences": selected_candidates,
+            "mean_affinity": np.mean(aff),
+            "max_affinity": np.max(aff),
+            "mean_solubility": np.mean(sol),
+            "max_solubility": np.max(sol)
+        })
+        
+    return rounds_data, history_best_aff, history_mean_sol
         
         
 # MAIN
@@ -87,10 +93,10 @@ if __name__ == "__main__":
     
     for name, strat in strategies.items():
         for method in encoding_methods:
-            experiment_name = f"{name}_{method}"  # ej: UCB_features, UCB_one_hot
+            experiment_name = f"{name}_{method}" 
             print(f"Estrategia ejecutada: {experiment_name}")
 
-            sequences, aff, sol, hist_aff, hist_sol = run_simulation(
+            rounds_data, hist_aff, hist_sol = run_simulation(
                 strategy=strat,
                 n_rounds=10,
                 init_size=50,
@@ -98,10 +104,16 @@ if __name__ == "__main__":
                 length=5,
                 encoding_method=method
             )
+            
+            # Guardar resultados en CSV
+            result_dict = {"rounds": rounds_data}
+            filepath = save_experiment(result_dict, seed=42, experiment_name=experiment_name)
+
 
             results[experiment_name] = {
                 "history_best_aff": hist_aff,
-                "history_mean_sol": hist_sol
+                "history_mean_sol": hist_sol,
+                "filepath": filepath
             }
        
     # Gráficos comparativos
