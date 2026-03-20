@@ -7,7 +7,8 @@ from src.generator.generator import random_peptide_generator, evaluate_sequences
 from src.encoding.encoding import encode, encode_batch
 from src.models.random_forest import RandomForestWithUncertainty
 from src.selection_strategy.ucb import UCBStrategy
-from src.storage.persistence import save_experiment
+from src.utilities.data_perstistence import save_experiment
+from src.utilities.graphics import plot_experiment_history
 
 # evaluate_peptide() as lab_lecture()
 
@@ -115,28 +116,5 @@ if __name__ == "__main__":
                 "history_mean_sol": hist_sol,
                 "filepath": filepath
             }
-       
-    # Gráficos comparativos
-    
-    plt.figure(figsize=(10,4))
-
-    # Mejor afinidad
-    plt.subplot(1,2,1)
-    for experiment_name, res in results.items():
-        plt.plot(res["history_best_aff"], label=experiment_name)
-    plt.xlabel("Round")
-    plt.ylabel("Best affinity")
-    plt.title("Evolución de afinidad")
-    plt.legend()
-
-    # Solubilidad media
-    plt.subplot(1,2,2)
-    for experiment_name, res in results.items():
-        plt.plot(res["history_mean_sol"], label=experiment_name)
-    plt.xlabel("Round")
-    plt.ylabel("Mean solubility")
-    plt.title("Evolución de solubilidad")
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
+            
+    plot_experiment_history(results, title_suffix="(OH vs PhysChem)")   

@@ -28,3 +28,6 @@ logs/
 # Others
 *.tmp
 *.swp
+
+/data/*
+!/data/.gitkeep
