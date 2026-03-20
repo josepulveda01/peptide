@@ -28,7 +28,14 @@ def generate_initial_data(N=50, lenght=5, seed=None):
 
 
 # SIMULACIÓN
-def run_simulation(strategy, n_rounds=10, init_size=50, batch_size=10, length=5):
+def run_simulation(
+    strategy,
+    n_rounds=10,
+    init_size=50,
+    batch_size=10,
+    length=5,
+    encoding_method="physchem"):
+    
     sequences, aff, sol = generate_initial_data(init_size)
     history_best_aff = []
     history_mean_sol = []
@@ -37,25 +44,21 @@ def run_simulation(strategy, n_rounds=10, init_size=50, batch_size=10, length=5)
         print(f"Ronda {r}")
         
         # Encoding
-        X = encode_batch(sequences)
+        X = encode_batch(sequences, method=encoding_method)
         Y = np.column_stack([aff, sol])  # shape = (n_samples, 2)
         
         # Entrenamiento del RF
         model = RandomForestWithUncertainty()
         model.fit(X,Y)
         
-        # 10M candidatos de largo L
         candidates = [random_peptide_generator(length) for _ in range(10 * batch_size)]
-
-        
-        # selección de candidatos
-        selected = strategy.select(model, candidates, batch_size)
+        selected_candidates = strategy.select(model, candidates, batch_size, encoding_method=encoding_method)
         
         # Evaluación
-        new_aff, new_sol = evaluate_sequences(selected)
+        new_aff, new_sol = evaluate_sequences(selected_candidates, noisy=True)
         
         # Actualización del dataset
-        sequences.extend(selected)
+        sequences.extend(selected_candidates)
         aff = np.concatenate([aff, new_aff])
         sol = np.concatenate([sol, new_sol])
         
@@ -79,40 +82,45 @@ if __name__ == "__main__":
         "UCB" : UCBStrategy(beta=1.0, sol_threshold=0.0)
     }
     
+    encoding_methods = ["one_hot", "physchem"]
     results = {}
     
     for name, strat in strategies.items():
-        print(f"Estrategia ejecutada: {name}")
-        
-        sequences, aff, sol, history_best_aff, history_mean_sol = (
-            run_simulation(strategy=strat)
-        )
-        
-        results[name] = {
-            "history_best_aff": history_best_aff,
-            "history_mean_sol": history_mean_sol
-        }
-    
-    print(f"Ejecutando estrategia: UCB")
-    
-    np.random.seed(42)
+        for method in encoding_methods:
+            experiment_name = f"{name}_{method}"  # ej: UCB_features, UCB_one_hot
+            print(f"Estrategia ejecutada: {experiment_name}")
 
-    # -----------------------
-    # Gráficos finales
-    # -----------------------
+            sequences, aff, sol, hist_aff, hist_sol = run_simulation(
+                strategy=strat,
+                n_rounds=10,
+                init_size=50,
+                batch_size=10,
+                length=5,
+                encoding_method=method
+            )
+
+            results[experiment_name] = {
+                "history_best_aff": hist_aff,
+                "history_mean_sol": hist_sol
+            }
+       
+    # Gráficos comparativos
+    
     plt.figure(figsize=(10,4))
 
+    # Mejor afinidad
     plt.subplot(1,2,1)
-    for name, res in results.items():
-        plt.plot(res["history_best_aff"], label=name)
+    for experiment_name, res in results.items():
+        plt.plot(res["history_best_aff"], label=experiment_name)
     plt.xlabel("Round")
     plt.ylabel("Best affinity")
     plt.title("Evolución de afinidad")
     plt.legend()
 
+    # Solubilidad media
     plt.subplot(1,2,2)
-    for name, res in results.items():
-        plt.plot(res["history_mean_sol"], label=name)
+    for experiment_name, res in results.items():
+        plt.plot(res["history_mean_sol"], label=experiment_name)
     plt.xlabel("Round")
     plt.ylabel("Mean solubility")
     plt.title("Evolución de solubilidad")

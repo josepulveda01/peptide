@@ -8,12 +8,12 @@ class UCBStrategy:
         self.beta = beta
         self.sol_threshold = sol_threshold
 
-    def select(self, model, candidate_seqs, batch_size):
+    def select(self, model, candidate_seqs, batch_size, encoding_method="physchem"):
         """
         Selecciona secuencias usando Upper Confidence Bound (UCB),
         considerando un umbral de solubilidad mínima.
         """
-        X = encode_batch(candidate_seqs)
+        X = encode_batch(candidate_seqs, method=encoding_method)
         mean, std = model.predict(X)
         
         mean_aff = mean[:, 0]

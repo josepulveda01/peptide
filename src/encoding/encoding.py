@@ -3,7 +3,7 @@ from src.generator.generator import aminoacid_features, aa_list
 
 aa_to_index =  { aa:i for i,aa in enumerate(aa_list)}
 
-def encode(peptide, method="features"):
+def encode(peptide, method="physchem"):
     # one-hot encoding: 20L variables
     if method == "one_hot":
         L = len(peptide)
@@ -16,7 +16,7 @@ def encode(peptide, method="features"):
         return encoding.flatten()
     
     # physicochemical properties: 3L+3+3 = 3(L+2) variables
-    elif method == "features":
+    elif method == "physchem":
         h = np.array([ aminoacid_features[aa][0] for aa in peptide ])
         q = np.array([ aminoacid_features[aa][1] for aa in peptide ])
         v = np.array([ aminoacid_features[aa][2] for aa in peptide ])
@@ -35,10 +35,10 @@ def encode(peptide, method="features"):
         raise ValueError(f"Método de encoding desconocido: {method}")
 
 # encoding de listas
-def encode_batch(sequences, method="features"):
+def encode_batch(sequences, method="physchem"):
     return np.vstack([encode(peptide, method) for peptide in sequences])
         
 
-def encode_dataset(df, method="features"):
+def encode_dataset(df, method="physchem"):
     #return np.vstack([encode(seq,method) for seq in df["sequence"]])
     return encode_batch(df["sequence"], method)
