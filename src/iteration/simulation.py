@@ -23,8 +23,7 @@ def generate_initial_data(N=50, lenght=5, seed=None):
         np.random.seed(seed)
     
     sequences = [random_peptide_generator(lenght) for _ in range(N)]
-    aff = np.array([affinity(p) for p in sequences])
-    sol = np.array([solubility(p) for p in sequences])
+    aff, sol = evaluate_sequences(sequences, noisy=False)
     return sequences, aff, sol
 
 
@@ -39,10 +38,11 @@ def run_simulation(strategy, n_rounds=10, init_size=50, batch_size=10, length=5)
         
         # Encoding
         X = encode_batch(sequences)
+        Y = np.column_stack([aff, sol])  # shape = (n_samples, 2)
         
         # Entrenamiento del RF
         model = RandomForestWithUncertainty()
-        model.fit(X,aff,sol)
+        model.fit(X,Y)
         
         # 10M candidatos de largo L
         candidates = [random_peptide_generator(length) for _ in range(10 * batch_size)]
@@ -73,10 +73,12 @@ def run_simulation(strategy, n_rounds=10, init_size=50, batch_size=10, length=5)
 # MAIN
 if __name__ == "__main__":
     random.seed(42)
+    np.random.seed(42)
     
     strategies = {
         "UCB" : UCBStrategy(beta=1.0, sol_threshold=0.0)
     }
+    
     results = {}
     
     for name, strat in strategies.items():

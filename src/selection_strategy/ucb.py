@@ -1,7 +1,7 @@
 # BAYESIAN OPTIMIZATION
 
 import numpy as np
-from src.encoding import encode_batch
+from src.encoding.encoding import encode_batch
 
 class UCBStrategy:
     def __init__(self, beta=1.0, sol_threshold=0.0):

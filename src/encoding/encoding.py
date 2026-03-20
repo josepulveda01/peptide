@@ -1,5 +1,5 @@
 import numpy as np
-from src.generator import aminoacid_features, aa_list
+from src.generator.generator import aminoacid_features, aa_list
 
 aa_to_index =  { aa:i for i,aa in enumerate(aa_list)}
 
