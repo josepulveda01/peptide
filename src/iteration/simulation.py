@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 from src.generator.generator import random_peptide_generator, evaluate_sequences
 from src.encoding.encoding import encode, encode_batch
 from src.models.random_forest import RandomForestWithUncertainty
+
 from src.selection_strategy.ucb import UCBStrategy
+from src.selection_strategy.active_learning import UncertaintyStrategy
+
 from src.utilities.data_perstistence import save_experiment
 from src.utilities.graphics import plot_experiment_history
 
@@ -86,7 +89,8 @@ if __name__ == "__main__":
     np.random.seed(42)
     
     strategies = {
-        "UCB" : UCBStrategy(beta=1.0, sol_threshold=0.0)
+        "UCB" : UCBStrategy(beta=1.0, sol_threshold=0.0),
+        "Uncertainty" : UncertaintyStrategy(sol_threshold=0.0)
     }
     
     encoding_methods = ["one_hot", "physchem"]
