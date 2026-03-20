@@ -101,7 +101,7 @@ def plot_metrics(metrics_history, experiment_name="experiment"):
     plt.close("all")
 
 
-def plot_strategy_comparison(results, encoding_method="one_hot"):
+def plot_strategy_comparison(results, encoding_method="physchem"):
     os.makedirs("results", exist_ok=True)
 
     plt.figure()
@@ -123,4 +123,90 @@ def plot_strategy_comparison(results, encoding_method="one_hot"):
     plt.tight_layout()
 
     plt.savefig(f"results/comparison_{encoding_method}.png")
+    plt.close()
+    
+
+def plot_with_confidence(all_results, encoding_method):
+    """
+    Grafica curvas promedio con intervalo de confianza (std) por estrategia.
+
+    Parameters
+    ----------
+    all_results : dict
+        {"strategy_name": [list of runs]}
+        cada run = lista de métricas por ronda
+    encoding_method : str
+        "one_hot" o "physchem"
+    """
+
+    # Asegurar carpeta
+    os.makedirs("results", exist_ok=True)
+    plt.figure(figsize=(8, 5))
+
+    for strategy_name, runs in all_results.items():
+        if len(runs) == 0:
+            continue  # evitar crashes
+
+        data = np.array(runs)  # shape (n_seeds, n_rounds)
+
+        # Seguridad extra
+        if data.ndim != 2:
+            print(f"[WARNING] Forma inesperada en {strategy_name}: {data.shape}")
+            continue
+
+        mean = data.mean(axis=0)
+        std = data.std(axis=0)
+
+        x = np.arange(len(mean))
+
+        # Línea principal
+        plt.plot(x, mean, label=strategy_name)
+
+        # Banda de incertidumbre
+        plt.fill_between(
+            x,
+            mean - std,
+            mean + std,
+            alpha=0.2
+        )
+
+    plt.title(f"Best Affinity vs Rounds ({encoding_method})")
+    plt.xlabel("Rounds")
+    plt.ylabel("Best Affinity")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"results/comparison_{encoding_method}.png")
+    plt.close()
+
+    
+def plot_pareto(aff, sol, experiment_name="pareto"):
+    os.makedirs("results", exist_ok=True)
+    points = np.column_stack([aff, sol])
+    pareto = []
+    
+    for i, p in enumerate(points):
+        dominated = False
+        for j, q in enumerate(points):
+            if all(q >= p) and any(q > p):
+                dominated = True
+                break
+        if not dominated:
+            pareto.append(p)
+
+    pareto = np.array(pareto)
+
+    plt.figure()
+    plt.scatter(aff, sol, alpha=0.3, label="Samples")
+    plt.scatter(pareto[:,0], pareto[:,1], label="Pareto", marker="x")
+
+    plt.xlabel("Affinity")
+    plt.ylabel("Solubility")
+    plt.title(f"Pareto Frontier - {experiment_name}")
+    plt.legend()
+    plt.grid()
+    plt.tight_layout()
+
+    plt.savefig(f"results/pareto_{experiment_name}.png")
     plt.close()
