@@ -1,76 +1,169 @@
-# Optimización de secuencias peptídicas con machine learning
+# Optimización de secuencias peptídicas con _machine learning_
+> Este proyecto aborda el desafío de explorar eficientemente un espacio combinatorio extremadamente grande de secuencias peptídicas, donde la evaluación experimental es costosa y limitada.
+
+## Tabla de contenidos
+* [Información general](#información-general)
+* [Enfoque](#enfoque)
+* [Modelo](#modelo)
+* [Estrategia de selección](#estrategia-de-selección)
+* [Estructura del proyecto](#estructura-del-proyecto)
+* [Implementación](#implementación)
+* [Uso](#uso)
+* [Limitaciones](#limitaciones)
+* [Futuras implementaciones](#futuras-implementaciones)
+* [Declaraciones de LLM](#declaraciones-de-llm)
+* [Repositorio en GitHub](#repositorio)
+* [Contacto](#contacto)
+<!-- * [License](#license) -->
 
 
-## 1. Descripción del proyecto
+## Información general
 
-Este repositorio contiene un sistema para explorar de forma inteligente el espacio combinatorio de péptidos cortos (4–5 aminoácidos) con el objetivo de identificar candidatos con alta afinidad a una proteína diana (pIC50 > 7.0) y solubilidad aceptable (> 0.5 mg/mL).
+La síntesis de péptidos es un proceso experimental altamente costoso y lento. El espacio muestral de una cadena de $n$ aminoácidos es del orden de $20^n$ elemento, lo que limita enormemente su viabilidad experimental para cadenas largas.
 
-Dado que la síntesis y medición experimental de péptidos es costosa y lenta, el proyecto simula un escenario realista mediante generación de datos sintéticos y aplica un ciclo iterativo de modelado predictivo y selección de secuencias inspirado en active learning y optimización bayesiana.
+En ese contexto, nace la necesidad de buscar mecanismos de exploración que permitan recorrer este espacio de forma eficiente y, a partir de la menor cantidad de observaciones posible, maximizar la variable experimental deseada.
 
-Se entrega como repositorio comprimido con código, datos generados y documentación de decisiones técnicas, listo para ejecución y presentación.
+En este problema particular, se busca optimizar simultáneamente:
+- Afinidad de unión a una proteína diana
+- Solubilidad en medio acuoso
 
-
-## 2. Funcionalidades principales
-
-- Generación sintética de secuencias de péptidos y sus propiedades (afinidad y solubilidad).
-
-- Codificación de secuencias en representaciones numéricas para modelado (one-hot o descriptor fisicoquímico).
-
-- Modelos predictivos de propiedades de péptidos: Random Forest con estimación de incertidumbre.
-
-- Estrategia de selección de nuevas secuencias usando Upper Confidence Bound (UCB).
-
-- Ciclo iterativo de exploración: entrenar modelo → seleccionar candidatos → evaluar → reentrenar.
-
-- Persistencia estructurada de datos por ronda (CSV).
-
-- Visualizaciones de evolución de propiedades y trade-offs.
-
-- Documentación del uso de LLMs en diseño y validación de prompts (docs/llm_usage.md).
+Y dado que la evaluación experimental puede considerarse una función de caja negra, este problema puede reinterpretarse como uno de **optimización bayesiana**.
 
 
-## 3. Instalación
 
-Se recomienda usar Python ≥ 3.10.
 
-```python
-git clone <repo_url>
-cd peptide_project
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+
+## Enfoque
+
+Se propone un esquema de aprendizaje iterativo basado en el siguiente ciclo:
+
+Datos → Codificación → Entrenamiento → Selección → Evaluación → Datos
+
+En cada iteración:
+1. Se entrena un modelo predictivo
+2. Se generan nuevas secuencias candidatas
+3. Se seleccionan las más prometedoras
+4. Se evalúan (mediante una función sintética)
+5. Se incorporan al dataset
+
+
+
+## Modelo
+
+Se utiliza un modelo de **Random Forest** para predecir:
+- Afinidad (pIC50)
+- Solubilidad
+
+Además, se emplean dos estrategias de representación:
+- **_One-hot encoding_** (agnóstico)
+- **_Features_ fisicoquímicas** (informadas)
+
+Esto permite comparar el impacto de incorporar conocimiento del dominio en el proceso de aprendizaje. El modelo también permite estimar incertidumbre mediante la variabilidad entre árboles, lo cual es clave para las estrategias de selección.
+
+
+## Estrategia de selección
+
+Se implementan tres enfoques principales:
+
+- **Función de adquisición (UCB)**  
+Balancea exploración y explotación
+
+- **Aprendizaje activo (_uncertainty sampling_)**  
+  Prioriza regiones con alta incertidumbre
+
+- **Estrategia evolutiva**  
+  Genera nuevas secuencias mediante mutaciones
+
+El objetivo es analizar cómo estas estrategias afectan el desempeño del sistema.
+
+
+
+## Estructura del proyecto
+
+Arquitectura modular orientada a experimentación iterativa.
+
+    .
+    ├── data/                    # Almacenamiento de datos
+    ├── results/                 # Resultados de simulaciones 
+    ├── src/                     # Código fuente principal
+    │   ├── encoding/            # Codificación numérica de peptidos
+    │   ├── evaluation/          # Métricas
+    │   ├── generator/           # Generador de péptidos
+    │   ├── iteration/           # Loop
+    │   ├── models/              # Modelos de ML
+    │   ├── selection_strategy/  # Estrategias de selección de candidatos
+    │   └── utilities/           # Funciones auxiliares
+    ├── main.py                  # Script principal para ejecutar experimentos
+    ├── config.py                # Configuración de parámetros
+    ├── requirements.txt         # Dependencias del proyecto
+    └── README.md                # Documentación
+
+
+
+## Implementación
+
+```bash
 pip install -r requirements.txt
+python main.py
+```
+
+## Uso
+
+Para ejecutar una simulación básica:
+
+```bash
+python main.py
 ```
 
 
-## 4. Uso
 
-Ejemplo de un ciclo completo de exploración:
+## Limitaciones
 
-```python
-from src.generator.generator import random_peptide_generator, evaluate_sequences
-from src.models.random_forest import RandomForestWithUncertainty
-from src.selection_strategy.ucb import UCBStrategy
-from src.experiments.simulation import run_simulation_loop
+Debido al plazo acotado para el proyecto, aún se encuentra en desarrollo. A fecha de 20-03-2026, se identifican las siguientes limitaciones:
 
-# Generar conjunto inicial
-initial_seqs = random_peptide_generator(n=20, length=5)
-aff, sol = evaluate_sequences(initial_seqs, noisy=True, noise_std=0.1)
+- Uso de datos sintéticos
+- Falta de validación formal del modelo
+- Optimización multiobjetivo simplificada
+- Exploración del espacio limitada
+- Escalabilidad restringida
+- Modelo relativamente simple
+- Incertidumbre del _Random Forest_ aproximada
+- Dependencia del diseño de la función sintética
 
-# Definir modelo y estrategia de selección
-model = RandomForestWithUncertainty()
-ucb = UCBStrategy(beta=1.0, sol_threshold=0.5)
 
-# Ejecutar ciclo iterativo de exploración
-results = run_simulation_loop(
-    initial_seqs,
-    aff,
-    sol,
-    model,
-    ucb,
-    n_rounds=5,     # Número de rondas
-    batch_size=10,  # Secuencias nuevas por ronda
-    save_path="data/results.csv"
-)
 
-```
+## Futuras implementaciones
+
+En futuras iteraciones del proyecto, se espera poder cubrir la mayoría de limitaciones. Principalmente:
+
+- Métodos de validación: _train/test split_ y _cross validation_
+- Optimización de Pareto
+- Optimización Bayesiana con procesos gaussianos
+- Optimización del código para escalabilidad a secuencias más largas
+- Mejora del sistema de almacenamiento mediante SQL
+- Parámetros inciales en un archivo config.py
+
+
+## Declaraciones de LLM
+
+Se utilizó ChatGPT como herramienta de apoyo para:
+
+- Contextualización del problema
+- Estructuración del código
+- Diligencia de labores simples
+- Asistencia en debugging
+- Detección de _typos_
+
+Todas las decisiones de diseño, validación de resultados e implementación final fueron realizadas y verificadas manualmente por el autor.
+
+
+
+## Repositorio de GitHub
+
+Este repositorio se encuentra subido a GitHub. Puede consultar detalles sobre commits, evolución y estado actual del proyecto en el siguiente enlace:
+https://github.com/josepulveda01/peptide.git
+
+## Contacto
+
+**Autor:** José Sepúlveda \
+**Correo:** josepulveda01@hotmail.com
