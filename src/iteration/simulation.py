@@ -9,6 +9,7 @@ from src.models.random_forest import RandomForestWithUncertainty
 
 from src.selection_strategy.ucb import UCBStrategy
 from src.selection_strategy.active_learning import UncertaintyStrategy
+from src.selection_strategy.evolutive import EvolutiveStrategy
 
 from src.utilities.data_perstistence import save_experiment
 from src.utilities.graphics import plot_experiment_history
@@ -90,7 +91,8 @@ if __name__ == "__main__":
     
     strategies = {
         "UCB" : UCBStrategy(beta=1.0, sol_threshold=0.0),
-        "Uncertainty" : UncertaintyStrategy(sol_threshold=0.0)
+        "Uncertainty" : UncertaintyStrategy(sol_threshold=0.0),
+        "Evolutive" : EvolutiveStrategy()
     }
     
     encoding_methods = ["one_hot", "physchem"]
