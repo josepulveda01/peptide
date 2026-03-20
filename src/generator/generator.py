@@ -70,11 +70,22 @@ def affinity(peptide):
 
 # simula una medición experimental de solubilidad y afinidad, continene ruido
 def evaluate_peptide(peptide, noisy=True, noise_std=0.1):
-    sol, aff = solubility(peptide), affinity(peptide)
+    aff, sol = affinity(peptide), solubility(peptide)
     if noisy:
-        sol += np.random.normal(0, noise_std)
         aff += np.random.normal(0, noise_std)
-    return sol, aff
+        sol += np.random.normal(0, noise_std)
+    return aff, sol
+
+
+# vectorización de la función anterior aplicada a una secuencia de peptidos
+def evaluate_sequences(sequences, noisy=True, noise_std=0.1):
+    aff = np.array([affinity(p) for p in sequences])
+    sol = np.array([solubility(p) for p in sequences])
+    n = len(sequences)
+    if noisy:
+        aff += np.random.normal(0, noise_std, size=n)
+        sol += np.random.normal(0, noise_std, size=n)
+    return aff, sol
 
 
 def generate_dataset(N=200, length=5, seed=None):
