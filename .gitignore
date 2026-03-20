@@ -31,3 +31,5 @@ logs/
 
 /data/*
 !/data/.gitkeep
+/results/*
+!/results/.gitkeep

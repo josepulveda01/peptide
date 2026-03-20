@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 def plot_experiment_history(results, title_suffix=""):
     """
@@ -58,3 +59,68 @@ def plot_experiment_history(results, title_suffix=""):
 
     plt.tight_layout()
     plt.show()
+
+
+def plot_metrics(metrics_history, experiment_name="experiment"):
+    import os
+    os.makedirs("results", exist_ok=True)
+    
+    rounds = [m["round"] for m in metrics_history]
+
+    best_aff = [m["best_affinity"] for m in metrics_history]
+    hit_rate = [m["hit_rate"] for m in metrics_history]
+    rmse = [m["rmse"] for m in metrics_history]
+
+    # --- Best affinity ---
+    plt.figure()
+    plt.plot(rounds, best_aff)
+    plt.xlabel("Round")
+    plt.ylabel("Best Affinity")
+    plt.title(f"Best Affinity - {experiment_name}")
+    plt.grid()
+    plt.savefig(f"results/{experiment_name}_best_affinity.png")
+
+    # --- Hit rate ---
+    plt.figure()
+    plt.plot(rounds, hit_rate)
+    plt.xlabel("Round")
+    plt.ylabel("Hit Rate")
+    plt.title(f"Hit Rate - {experiment_name}")
+    plt.grid()
+    plt.savefig(f"results/{experiment_name}_hit_rate.png")
+
+    # --- RMSE ---
+    plt.figure()
+    plt.plot(rounds, rmse)
+    plt.xlabel("Round")
+    plt.ylabel("RMSE")
+    plt.title(f"RMSE - {experiment_name}")
+    plt.grid()
+    plt.savefig(f"results/{experiment_name}_rmse.png")
+
+    plt.close("all")
+
+
+def plot_strategy_comparison(results, encoding_method="one_hot"):
+    os.makedirs("results", exist_ok=True)
+
+    plt.figure()
+
+    for name, data in results.items():
+        if encoding_method not in name:
+            continue
+
+        history = data["history_best_aff"]
+        rounds = list(range(len(history)))
+
+        plt.plot(rounds, history, label=name)
+
+    plt.xlabel("Round")
+    plt.ylabel("Best Affinity")
+    plt.title(f"Strategy Comparison ({encoding_method})")
+    plt.legend()
+    plt.grid()
+    plt.tight_layout()
+
+    plt.savefig(f"results/comparison_{encoding_method}.png")
+    plt.close()
