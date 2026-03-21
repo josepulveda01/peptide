@@ -112,7 +112,7 @@ python main.py
 Para ejecutar una simulación básica:
 
 ```bash
-python main.py
+python -m main.py
 ```
 
 
